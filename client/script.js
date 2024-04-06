@@ -1,6 +1,5 @@
 import bot from './assets/bot.svg'
 import user from './assets/user.svg'
-
 const form = document.querySelector('form')
 const chatContainer = document.querySelector('#chat_container')
 
@@ -67,6 +66,12 @@ const handleSubmit = async (e) => {
 
     const data = new FormData(form)
 
+    // Log the data being sent in JSON format
+    const jsonData = {
+        prompt: data.get('prompt')
+    }
+    console.log('Data being sent:', JSON.stringify(jsonData))
+
     // user's chatstripe
     chatContainer.innerHTML += chatStripe(false, data.get('prompt'))
 
@@ -91,9 +96,7 @@ const handleSubmit = async (e) => {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            prompt: data.get('prompt')
-        })
+        body: JSON.stringify(jsonData) // Send JSON data
     })
 
     clearInterval(loadInterval)
@@ -101,7 +104,7 @@ const handleSubmit = async (e) => {
 
     if (response.ok) {
         const data = await response.json();
-        const parsedData = data.bot.trim() // trims any trailing spaces/'\n' 
+        const parsedData = data.bot.trim() // trims any trailing spaces/ 
 
         typeText(messageDiv, parsedData)
     } else {
@@ -111,6 +114,8 @@ const handleSubmit = async (e) => {
         alert(err)
     }
 }
+
+
 
 form.addEventListener('submit', handleSubmit)
 form.addEventListener('keyup', (e) => {
