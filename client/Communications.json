@@ -1,0 +1,11 @@
+[
+    {
+      "userPrompt": "Hello",
+      "botReply": "Hi there! How can I assist you?"
+    },
+    {
+      "userPrompt": "How do I reset my password?",
+      "botReply": "To reset your password, go to the login page and click on the 'Forgot Password' link."
+    }
+  ]
+  
