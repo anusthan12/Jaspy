@@ -1,10 +1,15 @@
+// Importing images for bot and user avatars
 import bot from './assets/bot.svg'
 import user from './assets/user.svg'
+
+// Selecting form and chat container elements
 const form = document.querySelector('form')
 const chatContainer = document.querySelector('#chat_container')
 
+// Declaring variables for loader and load interval
 let loadInterval
 
+// Function to display loader animation
 function loader(element) {
     element.textContent = ''
 
@@ -19,22 +24,7 @@ function loader(element) {
     }, 300);
 }
 
-function typeText(element, text) {
-    let index = 0
-
-    let interval = setInterval(() => {
-        if (index < text.length) {
-            element.innerHTML += text.charAt(index)
-            index++
-        } else {
-            clearInterval(interval)
-        }
-    }, 20)
-}
-
-// generate unique ID for each message div of bot
-// necessary for typing text effect for that specific reply
-// without unique ID, typing text will work on every element
+// Function to generate a unique ID for chat messages
 function generateUniqueId() {
     const timestamp = Date.now();
     const randomNumber = Math.random();
@@ -43,6 +33,7 @@ function generateUniqueId() {
     return `id-${timestamp}-${hexadecimalString}`;
 }
 
+// Function to generate HTML markup for chat messages
 function chatStripe(isAi, value, uniqueId) {
     return (
         `
@@ -61,65 +52,53 @@ function chatStripe(isAi, value, uniqueId) {
     )
 }
 
+// Event handler for form submission
 const handleSubmit = async (e) => {
+    console.log("Submit button clicked");
     e.preventDefault()
 
+    // Getting user input from form
     const data = new FormData(form)
 
-    // Log the data being sent in JSON format
+    // Creating JSON data object with user prompt
     const jsonData = {
         prompt: data.get('prompt')
     }
-    console.log('Data being sent:', JSON.stringify(jsonData))
 
-    // user's chatstripe
-    chatContainer.innerHTML += chatStripe(false, data.get('prompt'))
-
-    // to clear the textarea input 
-    form.reset()
-
-    // bot's chatstripe
-    const uniqueId = generateUniqueId()
-    chatContainer.innerHTML += chatStripe(true, " ", uniqueId)
-
-    // to focus scroll to the bottom 
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-
-    // specific message div 
-    const messageDiv = document.getElementById(uniqueId)
-
-    // messageDiv.innerHTML = "..."
-    loader(messageDiv)
-
-    const response = await fetch('http://localhost:5000/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(jsonData) // Send JSON data
-    })
-
-    clearInterval(loadInterval)
-    messageDiv.innerHTML = " "
-
-    if (response.ok) {
-        const data = await response.json();
-        const parsedData = data.bot.trim() // trims any trailing spaces/ 
-
-        typeText(messageDiv, parsedData)
-    } else {
-        const err = await response.text()
-
-        messageDiv.innerHTML = "Something went wrong"
-        alert(err)
+    // Fetching conversation history from Communications.json
+    let communicationsData = [];
+    try {
+        const response = await fetch('Communications.json');
+        if (response.ok) {
+            communicationsData = await response.json();
+        }
+    } catch (error) {
+        console.error('Error fetching Communications.json:', error);
     }
+
+    // Adding user's prompt to conversation history
+    communicationsData.push({ userPrompt: jsonData.prompt });
+
+    // Displaying user's prompt
+    chatContainer.innerHTML += chatStripe(false, jsonData.prompt);
+
+    // Finding the last bot reply from conversation history
+    const lastBotReply = communicationsData
+        .filter(entry => entry.botReply) // Filter out entries without bot replies
+        .slice(-1) // Get the last entry
+        .map(entry => entry.botReply)[0]; // Extract the bot's reply
+
+    // Displaying the last bot reply (if available)
+    if (lastBotReply) {
+        chatContainer.innerHTML += chatStripe(true, lastBotReply);
+    }
+
+    // Resetting the form
+    form.reset();
+
+    // Scrolling to the bottom of the chat container
+    chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
-
-
+// Adding event listener for form submission
 form.addEventListener('submit', handleSubmit)
-form.addEventListener('keyup', (e) => {
-    if (e.keyCode === 13) {
-        handleSubmit(e)
-    }
-})
